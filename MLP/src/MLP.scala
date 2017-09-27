@@ -8,6 +8,7 @@ object MLP {
   val outputLayer = Array[Neuron](new Neuron(4, true))
   val desiredOutput = new Array[Double](16)
   val absoluteErrors = new Array[Double](16)
+  val netOutputs = new Array[Double](16)
 
   def init(): Unit = {
     hiddenLayer.foreach(_.init())
@@ -36,18 +37,8 @@ object MLP {
         desiredOutput(i) = 1
       }
     }
-
-//    inputs.zip(desiredOutput).foreach({case (input, output) => input.foreach(print)
-//      println(s": ${output}")})
   }
 
-//  def targetAccuracyAchieved(): Boolean ={
-//    for(i<-0 until absoluteErrors.length){
-//
-//    }
-//    val temp =
-//  }
-//
 
   def forwardPass(): Unit ={
 
@@ -56,23 +47,30 @@ object MLP {
   def main(args: Array[String]): Unit = {
     init()
     val learningRate = 0.5
-    var epoch = 0;
+    var epoch = 0
     do {
+      if(epoch % 1000 == 0) {
+        println(s"###############    EPOCH: ${epoch}")
+      }
 
-      println(s"###############    EPOCH: ${epoch}")
-      epoch+=1
       inputs.zipWithIndex.foreach({ case (input, i) => {
-        input.foreach(bit => print(s"${bit.toInt}, "))
-        print(" : ")
+
         val hiddenLayerOutputs = new Array[Double](hiddenLayer.length)
         hiddenLayer.zipWithIndex.foreach({
           case (hiddenNeuron, j) => hiddenLayerOutputs(j) = hiddenNeuron.output(input)
         })
 
 
-        val netOutput = outputLayer.map(outputNeuron => outputNeuron.output(input)).sum
-        absoluteErrors(i) = desiredOutput(i) - netOutput
-        println(s"${desiredOutput(i)} : ${netOutput} : ${absoluteErrors(i)}")
+        netOutputs(i) = outputLayer.map(outputNeuron => outputNeuron.output(input)).sum
+        absoluteErrors(i) = Math.abs(desiredOutput(i) - netOutputs(i))
+
+
+        if(epoch % 1000 == 0) {
+
+          input.foreach(bit => print(s"${bit.toInt}, "))
+          print(": ")
+          println(s"${desiredOutput(i).toInt} : ${netOutputs(i)} : ${absoluteErrors(i)}")
+        }
 
 
         outputLayer.foreach(_.updateWeights(learningRate, desiredOutput(i)))
@@ -88,14 +86,25 @@ object MLP {
 
       }
       })
+
+      epoch+=1
+//      scala.io.StdIn.readLine()
+//      return
     }while(!absoluteErrors.map(_ match {
-      case x if x >= 0.05 =>
+      case x if Math.abs(x) <= 0.05 =>
         true
       case _ =>
         false
     }).forall(identity))
+
+    println(s"###############    EPOCH: ${epoch}")
+    inputs.zipWithIndex.foreach({ case (input, i) => {
+      input.foreach(bit => print(s"${bit.toInt}, "))
+      print(" : ")
+      println(s"${desiredOutput(i)} : ${netOutputs(i)} : ${absoluteErrors(i)}")
+    }})
+
+
   }
-
-
 
 }
