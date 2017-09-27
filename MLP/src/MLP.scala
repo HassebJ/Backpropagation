@@ -11,7 +11,15 @@ object MLP {
 
   def init(): Unit = {
     hiddenLayer.foreach(_.init())
+//    hiddenLayer(0).setWeights(Array[Double](0.8, 0.2, 0.4, 0.9))
+//    hiddenLayer(1).setWeights(Array[Double](0.4, 0.9, 0.8, 0.2))
+//    hiddenLayer(2).setWeights(Array[Double](0.3, 0.5, 0.7, 0.6))
+//    hiddenLayer(3).setWeights(Array[Double](0.7, 0.6, 0.3, 0.5))
+
     outputLayer.foreach(_.init())
+//    outputLayer(0).setWeights(Array[Double](0.6, 0.4, 0.2, 0.5))
+
+
     inputs(0) = Array(0,0,0,0)
     inputs(1) = Array(0,0,0,1)
     inputs(2) = Array(0,0,1,0)
@@ -29,6 +37,8 @@ object MLP {
     inputs(14) = Array(1,1,1,0)
     inputs(15) = Array(1,1,1,1)
 
+//    inputs(0) = Array(1,1,1,1)
+
     for(i <- 0 until 16){
       if(inputs(i).sum % 2 == 0){
         desiredOutput(i) = 0
@@ -36,6 +46,8 @@ object MLP {
         desiredOutput(i) = 1
       }
     }
+
+//    desiredOutput(0) = 0
 
 //    inputs.zip(desiredOutput).foreach({case (input, output) => input.foreach(print)
 //      println(s": ${output}")})
@@ -55,15 +67,15 @@ object MLP {
 
   def main(args: Array[String]): Unit = {
     init()
-    val learningRate = 0.5
+    val learningRate = 0.05
     var epoch = 0;
     do {
 
-      println(s"###############    EPOCH: ${epoch}")
+//      println(s"###############    EPOCH: ${epoch}")
       epoch+=1
       inputs.zipWithIndex.foreach({ case (input, i) => {
-        input.foreach(bit => print(s"${bit.toInt}, "))
-        print(" : ")
+//        input.foreach(bit => print(s"${bit.toInt}, "))
+//        print(" : ")
         val hiddenLayerOutputs = new Array[Double](hiddenLayer.length)
         hiddenLayer.zipWithIndex.foreach({
           case (hiddenNeuron, j) => hiddenLayerOutputs(j) = hiddenNeuron.output(input)
@@ -72,7 +84,7 @@ object MLP {
 
         val netOutput = outputLayer.map(outputNeuron => outputNeuron.output(hiddenLayerOutputs)).sum
         absoluteErrors(i) = desiredOutput(i) - netOutput
-        println(s"${desiredOutput(i)} : ${netOutput} : ${absoluteErrors(i)}")
+//        println(s"${desiredOutput(i)} : ${netOutput} : ${absoluteErrors(i)}")
 
 
         outputLayer.foreach(_.updateWeights(learningRate, desiredOutput(i)))

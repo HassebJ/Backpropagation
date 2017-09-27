@@ -11,7 +11,7 @@ class Neuron (dimension: Int, isOutputNeuron: Boolean){
 
   def init(): Unit ={
     val rand = scala.util.Random
-    rand.setSeed(System.currentTimeMillis)
+    rand.setSeed(100)
     for(i <- 0 until dimension){
 //      inputs(i) = rand.nextDouble()
       weights(i) = -1 + (1 - (-1)) * rand.nextDouble
@@ -19,7 +19,9 @@ class Neuron (dimension: Int, isOutputNeuron: Boolean){
     }
   }
 
-
+  def setWeights(weights: Array[Double]): Unit ={
+    this.weights = weights
+  }
 
   def localField(inputs: Array[Double]): Double ={
     this.inputs = inputs
@@ -66,9 +68,13 @@ class Neuron (dimension: Int, isOutputNeuron: Boolean){
   def updateWeights(learningRate: Double, desiredOutput: Double): Unit ={
 //    val error = weightCorrection(learningRate, desiredOutput)
     for(i <- 0 until weights.length){
+      val oldWeight = weights(i)
       weights(i) = weights(i) + weightCorrection(learningRate, inputs(i), desiredOutput)
+//      println(s"old weight: ${ oldWeight} - new weight: ${weights(i)}")
     }
-    bias = bias + weightCorrection(learningRate, desiredOutput, 1)
+    val oldBias = bias
+    bias = bias + weightCorrection(learningRate, 1, desiredOutput)
+//    println(s"old bias: ${ oldBias} - new bias: ${bias}")
 
 //    println(weights)
   }
@@ -76,9 +82,13 @@ class Neuron (dimension: Int, isOutputNeuron: Boolean){
                     backpropagatedGradientWeightTuples: Array[(Double, Double)]): Unit ={
 
     for(i <- 0 until weights.length){
+      val oldWeight = weights(i)
       weights(i) = weights(i) + weightCorrection(learningRate, inputs(i), backpropagatedGradientWeightTuples)
+//      println(s"old weight: ${ oldWeight} - new weight: ${weights(i)}")
     }
+    val oldBias = bias
     bias = bias + weightCorrection(learningRate, 1, backpropagatedGradientWeightTuples)
+//    println(s"old bias: ${ oldBias} - new bias: ${bias}")
 
 
   }
