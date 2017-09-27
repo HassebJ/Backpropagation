@@ -55,7 +55,7 @@ object MLP {
 
   def main(args: Array[String]): Unit = {
     init()
-    val learningRate = 0.5
+    val learningRate = 1.5
     var epoch = 0
     do {
       if(epoch % 1000 == 0) {

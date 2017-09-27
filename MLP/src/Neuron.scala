@@ -60,7 +60,10 @@ class Neuron (dimension: Int, isOutputNeuron: Boolean){
   def updateWeights(learningRate: Double, desiredOutput: Double): Unit ={
     //    val error = weightCorrection(learningRate, desiredOutput)
     for(i <- 0 until weights.length){
+      var oldWeight = weights(i)
+
       weights(i) = weights(i) + weightCorrection(learningRate, inputs(i), desiredOutput)
+      println(s"old weight: ${ oldWeight} - new weight: ${weights(i)}")
     }
 //    bias = bias + weightCorrection(learningRate, desiredOutput, 1)
 
@@ -81,7 +84,10 @@ class Neuron (dimension: Int, isOutputNeuron: Boolean){
                     backpropagatedGradientWeightTuples: Array[(Double, Double)]): Unit ={
 
     for(i <- 0 until weights.length){
+      var oldWeight = weights(i)
+
       weights(i) = weights(i) + weightCorrection(learningRate, inputs(i), backpropagatedGradientWeightTuples)
+      println(s"old weight: ${ oldWeight} - new weight: ${weights(i)}")
     }
 //    bias = bias + weightCorrection(learningRate, 1, backpropagatedGradientWeightTuples)
 
