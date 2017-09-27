@@ -3,7 +3,7 @@ import scala.math._
 class Neuron (dimension: Int, isOutputNeuron: Boolean){
   var inputs : Array [Double] = new Array[Double](dimension)
   var weights = new Array[Double](dimension)
-  var bias : Double = 0
+//  var bias : Double = 0
   var localGradient : Double = 0
   var output : Double = 0
 //  var desiredOutput: Double
@@ -15,15 +15,17 @@ class Neuron (dimension: Int, isOutputNeuron: Boolean){
     for(i <- 0 until dimension){
 //      inputs(i) = rand.nextDouble()
       weights(i) = -1 + (1 - (-1)) * rand.nextDouble
-      bias = -1 + (1 - (-1)) * rand.nextDouble
+//      bias = -1 + (1 - (-1)) * rand.nextDouble
     }
   }
 
-
+  def setWeights(weights: Array[Double]): Unit ={
+    this.weights = weights
+  }
 
   def localField(inputs: Array[Double]): Double ={
     this.inputs = inputs
-    return this.inputs.zip(weights).map({case (input ,weight) => input * weight}).sum + bias
+    return this.inputs.zip(weights).map({case (input ,weight) => input * weight}).sum //+ bias
   }
 
   def activationFunction(v: Double): Double ={
@@ -60,7 +62,7 @@ class Neuron (dimension: Int, isOutputNeuron: Boolean){
     for(i <- 0 until weights.length){
       weights(i) = weights(i) + weightCorrection(learningRate, inputs(i), desiredOutput)
     }
-    bias = bias + weightCorrection(learningRate, desiredOutput, 1)
+//    bias = bias + weightCorrection(learningRate, desiredOutput, 1)
 
 //    println(weights)
   }
@@ -81,7 +83,7 @@ class Neuron (dimension: Int, isOutputNeuron: Boolean){
     for(i <- 0 until weights.length){
       weights(i) = weights(i) + weightCorrection(learningRate, inputs(i), backpropagatedGradientWeightTuples)
     }
-    bias = bias + weightCorrection(learningRate, 1, backpropagatedGradientWeightTuples)
+//    bias = bias + weightCorrection(learningRate, 1, backpropagatedGradientWeightTuples)
 
 
   }

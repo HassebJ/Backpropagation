@@ -1,42 +1,51 @@
 object MLP {
 
   val inputs = new Array[Array[Double]](16)
-  var hiddenLayer = new Array[Neuron](4)
+  var hiddenLayer = new Array[Neuron](3)
   for(i <- 0 until hiddenLayer.length){
-    hiddenLayer(i) = new Neuron(4, false)
+    hiddenLayer(i) = new Neuron(2, false)
   }
-  val outputLayer = Array[Neuron](new Neuron(4, true))
+  val outputLayer = Array[Neuron](new Neuron(3, true))
   val desiredOutput = new Array[Double](16)
   val absoluteErrors = new Array[Double](16)
   val netOutputs = new Array[Double](16)
 
   def init(): Unit = {
-    hiddenLayer.foreach(_.init())
-    outputLayer.foreach(_.init())
-    inputs(0) = Array(0,0,0,0)
-    inputs(1) = Array(0,0,0,1)
-    inputs(2) = Array(0,0,1,0)
-    inputs(3) = Array(0,0,1,1)
-    inputs(4) = Array(0,1,0,0)
-    inputs(5) = Array(0,1,0,1)
-    inputs(6) = Array(0,1,1,0)
-    inputs(7) = Array(0,1,1,1)
-    inputs(8) = Array(1,0,0,0)
-    inputs(9) = Array(1,0,0,1)
-    inputs(10) = Array(1,0,1,0)
-    inputs(11) = Array(1,0,1,1)
-    inputs(12) = Array(1,1,0,0)
-    inputs(13) = Array(1,1,0,1)
-    inputs(14) = Array(1,1,1,0)
-    inputs(15) = Array(1,1,1,1)
+//    hiddenLayer.foreach(_.init())
+//    var weights = Array[Double](0.8, 0.2)
+    hiddenLayer(0).setWeights(Array[Double](0.8, 0.2))
+    hiddenLayer(1).setWeights(Array[Double](0.4, 0.9))
+    hiddenLayer(2).setWeights(Array[Double](0.3, 0.5))
 
-    for(i <- 0 until 16){
-      if(inputs(i).sum % 2 == 0){
-        desiredOutput(i) = 0
-      }else{
-        desiredOutput(i) = 1
-      }
-    }
+//    outputLayer.foreach(_.init())
+    outputLayer(0).setWeights(Array[Double](0.3, 0.5, 0.9))
+    inputs(0) = Array(1,1)
+//    inputs(0) = Array(0,0,0,0)
+//    inputs(1) = Array(0,0,0,1)
+//    inputs(2) = Array(0,0,1,0)
+//    inputs(3) = Array(0,0,1,1)
+//    inputs(4) = Array(0,1,0,0)
+//    inputs(5) = Array(0,1,0,1)
+//    inputs(6) = Array(0,1,1,0)
+//    inputs(7) = Array(0,1,1,1)
+//    inputs(8) = Array(1,0,0,0)
+//    inputs(9) = Array(1,0,0,1)
+//    inputs(10) = Array(1,0,1,0)
+//    inputs(11) = Array(1,0,1,1)
+//    inputs(12) = Array(1,1,0,0)
+//    inputs(13) = Array(1,1,0,1)
+//    inputs(14) = Array(1,1,1,0)
+//    inputs(15) = Array(1,1,1,1)
+
+
+    desiredOutput(0) = 0
+//    for(i <- 0 until 16){
+//      if(inputs(i).sum % 2 == 0){
+//        desiredOutput(i) = 0
+//      }else{
+//        desiredOutput(i) = 1
+//      }
+//    }
   }
 
 
@@ -57,13 +66,16 @@ object MLP {
 
         val hiddenLayerOutputs = new Array[Double](hiddenLayer.length)
         hiddenLayer.zipWithIndex.foreach({
-          case (hiddenNeuron, j) => hiddenLayerOutputs(j) = hiddenNeuron.output(input)
+          case (hiddenNeuron, j) =>
+            hiddenLayerOutputs(j) = hiddenNeuron.output(input)
+            println(s"hidden result ${j+1} = ${hiddenLayerOutputs(j)}")
         })
 
 
-        netOutputs(i) = outputLayer.map(outputNeuron => outputNeuron.output(input)).sum
+        netOutputs(i) = outputLayer.map(outputNeuron => outputNeuron.output(hiddenLayerOutputs)).sum
         absoluteErrors(i) = Math.abs(desiredOutput(i) - netOutputs(i))
 
+        println(s"output result = ${netOutputs(i)}")
 
         if(epoch % 1000 == 0) {
 
@@ -83,13 +95,13 @@ object MLP {
         }
         })
 
-
+        return
       }
       })
 
       epoch+=1
 //      scala.io.StdIn.readLine()
-//      return
+      return
     }while(!absoluteErrors.map(_ match {
       case x if Math.abs(x) <= 0.05 =>
         true
