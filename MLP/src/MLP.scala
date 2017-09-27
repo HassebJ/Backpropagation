@@ -70,7 +70,7 @@ object MLP {
         })
 
 
-        val netOutput = outputLayer.map(outputNeuron => outputNeuron.output(input)).sum
+        val netOutput = outputLayer.map(outputNeuron => outputNeuron.output(hiddenLayerOutputs)).sum
         absoluteErrors(i) = desiredOutput(i) - netOutput
         println(s"${desiredOutput(i)} : ${netOutput} : ${absoluteErrors(i)}")
 
