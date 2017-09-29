@@ -45,8 +45,8 @@ public class XOR_Example
                 calcNet(patNum);
 
                 // Adjust network weights.
-                WeightChangesHO();
-                WeightChangesIH(patNum);
+                double outputLocalGradient = WeightChangesHO(patNum);
+                WeightChangesIH(patNum, outputLocalGradient);
 
             } // i
             RMSerror = calcOverallError();
@@ -77,13 +77,17 @@ public class XOR_Example
     private static void initWeights()
     {
         //  Initialize weights to random values.
+        Random rand = new Random(System.currentTimeMillis());
         for(int j = 0; j < NUM_HIDDEN; j++)
         {
-            weightsHO[j] = -1 + (1 - (-1)) * new Random().nextDouble();
+            weightsHO[j] = -1 + (1 - (-1)) * rand.nextDouble();
+            weightsHO[j] = Math.round(weightsHO[j] * 100.0) / 100.0;
+            System.out.println("weightsHO["+j+"] = " + weightsHO[j]);
             for(int i = 0; i < NUM_INPUTS; i++)
             {
-                weightsIH[i][j] = -1 + (1 - (-1)) * new Random().nextDouble();
-                System.out.println("Weight = " + weightsIH[i][j]);
+                weightsIH[i][j] = -1 + (1 - (-1)) * rand.nextDouble();
+                weightsIH[i][j] = Math.round(weightsIH[i][j] * 100.0) / 100.0;
+                System.out.println("weightsIH["+i+"]["+j+"] = " + weightsIH[i][j]);
             } // i
         } // j
 
@@ -217,7 +221,7 @@ public class XOR_Example
         trainInputs[14][0] = 1;
         trainInputs[14][1] = 1;
         trainInputs[14][2] = 1;
-        trainInputs[14][3] = 0;
+        trainInputs[14][3] = -1;
 
         trainInputs[14][4] = 1;    // Bias
         trainOutput[14] = 1;
@@ -254,20 +258,24 @@ public class XOR_Example
             outPred += hiddenVal[i] * weightsHO[i];
 
         }
+        outPred = 1/(1 + Math.exp(-outPred));
         netOutput[patNum] = outPred;
 
-        errThisPat = outPred - trainOutput[patNum]; // Error = "Expected" - "Actual"
+        errThisPat = trainOutput[patNum] - outPred; // Error = "Expected" - "Actual"
         errorOutput[patNum] = errThisPat;
          return;
     }
 
-    private static void WeightChangesHO()
+    private static double  WeightChangesHO(int patNum)
     {
         // Adjust the Hidden to Output weights.
+        double activationFunctionDifferential = netOutput[patNum] * (1 - netOutput[patNum]);
+        double localGradient = activationFunctionDifferential * errThisPat;
         for(int k = 0; k < NUM_HIDDEN; k++)
         {
-            double weightChange = LR_HO * errThisPat * hiddenVal[k];
-            weightsHO[k] -= weightChange;
+
+            double weightChange = LR_HO * localGradient * hiddenVal[k];
+            weightsHO[k] += weightChange;
 
             // Regularization of the output weights.
             if(weightsHO[k] < -5.0){
@@ -276,10 +284,10 @@ public class XOR_Example
                 weightsHO[k] = 5.0;
             }
         }
-        return;
+        return localGradient;
     }
 
-    private static void WeightChangesIH(final int patNum)
+    private static void WeightChangesIH(final int patNum, double outputLocalGradient)
     {
         // Adjust the Input to Hidden weights.
         for(int i = 0; i < NUM_HIDDEN; i++)
@@ -287,12 +295,16 @@ public class XOR_Example
             for(int k = 0; k < NUM_INPUTS; k++)
             {
 //                double x = 1 - Math.pow(hiddenVal[i], 2);
-                double x = hiddenVal[i] * (1 - hiddenVal[i]);
-                x = x * weightsHO[i] * errThisPat * LR_IH;
-                x = x * trainInputs[patNum][k];
+                double activationFunctionDifferential = hiddenVal[i] * (1 - hiddenVal[i]);
+//                double x = hiddenVal[i] * (1 - hiddenVal[i]);
+//                x = x * weightsHO[i] * errThisPat * LR_IH;
+//                x = x * trainInputs[patNum][k];
 
-                double weightChange = x;
-                weightsIH[k][i] -= weightChange;
+
+
+//                double weightChange = x;
+                double weightChange = LR_IH * trainInputs[patNum][k] * activationFunctionDifferential * outputLocalGradient * weightsHO[i];
+                weightsIH[k][i] += weightChange;
             } // k
         } // i
         return;

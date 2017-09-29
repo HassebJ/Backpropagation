@@ -1,21 +1,24 @@
 import scala.math._
 
-class Neuron (dimension: Int, isOutputNeuron: Boolean){
+object Neuron{
+  var alpha = 0D
+}
+
+class Neuron (var dimension: Int, isOutputNeuron: Boolean){
+  dimension = dimension + 1 //cater for bias
+//  var seed = 2//System.currentTimeMillis()
+  var rand: java.util.Random =  new java.util.Random(MLP.seed)
   var inputs : Array [Double] = new Array[Double](dimension)
   var weights = new Array[Double](dimension)
-  var bias : Double = 0
   var localGradient : Double = 0
   var output : Double = 0
-//  var desiredOutput: Double
-
+  var previousWeightUpdate = 0D
 
   def init(): Unit ={
-    val rand = scala.util.Random
-    rand.setSeed(100)
+
     for(i <- 0 until dimension){
-//      inputs(i) = rand.nextDouble()
       weights(i) = -1 + (1 - (-1)) * rand.nextDouble
-      bias = -1 + (1 - (-1)) * rand.nextDouble
+      weights(i) = Math.round(weights(i) * 100.0) / 100.0
     }
   }
 
@@ -25,7 +28,10 @@ class Neuron (dimension: Int, isOutputNeuron: Boolean){
 
   def localField(inputs: Array[Double]): Double ={
     this.inputs = inputs
-    return this.inputs.zip(weights).map({case (input ,weight) => input * weight}).sum + bias
+    if(isOutputNeuron){
+      this.inputs = Array[Double](inputs(0), inputs(1), inputs(2), inputs(3), 1 )
+    }
+    return this.inputs.zip(weights).map({case (input ,weight) => input * weight}).sum// + bias
   }
 
   def activationFunction(v: Double): Double ={
@@ -40,9 +46,12 @@ class Neuron (dimension: Int, isOutputNeuron: Boolean){
     return  numerator/denominator
 
   }
-
+  def differentiatedErrorFunctionSimplified(y: Double): Double ={
+    return  y * (1 - y)
+  }
   def output(input: Array[Double]): Double ={
-    output = activationFunction(localField(input))
+    val v = localField(input)
+    output = activationFunction(v)
     return output
   }
 
@@ -51,9 +60,10 @@ class Neuron (dimension: Int, isOutputNeuron: Boolean){
   }
 
   def weightCorrection(learningRate: Double, inputSignal: Double, desiredOutput: Double): Double ={
-    localGradient = differentiatedErrorFunction(output) * errorSignal(desiredOutput)
+    localGradient = differentiatedErrorFunctionSimplified(output) * errorSignal(desiredOutput)
 
-    return learningRate * localGradient * inputSignal
+    val delta = learningRate * localGradient * inputSignal
+    return delta
   }
 
   def weightCorrection(learningRate: Double,
@@ -61,35 +71,28 @@ class Neuron (dimension: Int, isOutputNeuron: Boolean){
                        backpropagatedGradientWeightTuples: Array[(Double, Double)]): Double ={
 
     val weightedSumOfGradients = backpropagatedGradientWeightTuples.map({case (gradient ,weight) => gradient * weight}).sum
-    localGradient = differentiatedErrorFunction(output) * weightedSumOfGradients
-    return learningRate * localGradient * inputSignal
+    localGradient = differentiatedErrorFunctionSimplified(output) * weightedSumOfGradients
+
+    val delta = learningRate * localGradient * inputSignal
+    return delta
   }
 
   def updateWeights(learningRate: Double, desiredOutput: Double): Unit ={
-//    val error = weightCorrection(learningRate, desiredOutput)
     for(i <- 0 until weights.length){
-      val oldWeight = weights(i)
-      weights(i) = weights(i) + weightCorrection(learningRate, inputs(i), desiredOutput)
-//      println(s"old weight: ${ oldWeight} - new weight: ${weights(i)}")
+      val currentWeightUpdate = weightCorrection(learningRate, inputs(i), desiredOutput)
+      weights(i) = (Neuron.alpha * previousWeightUpdate) + weights(i) + currentWeightUpdate
+      previousWeightUpdate = currentWeightUpdate
     }
-    val oldBias = bias
-    bias = bias + weightCorrection(learningRate, 1, desiredOutput)
-//    println(s"old bias: ${ oldBias} - new bias: ${bias}")
 
-//    println(weights)
   }
   def updateWeights(learningRate: Double,
                     backpropagatedGradientWeightTuples: Array[(Double, Double)]): Unit ={
 
     for(i <- 0 until weights.length){
-      val oldWeight = weights(i)
-      weights(i) = weights(i) + weightCorrection(learningRate, inputs(i), backpropagatedGradientWeightTuples)
-//      println(s"old weight: ${ oldWeight} - new weight: ${weights(i)}")
+      val currentWeightUpdate = weightCorrection(learningRate, inputs(i), backpropagatedGradientWeightTuples)
+      weights(i) = (Neuron.alpha * previousWeightUpdate) + weights(i) +  currentWeightUpdate
+      previousWeightUpdate = currentWeightUpdate
     }
-    val oldBias = bias
-    bias = bias + weightCorrection(learningRate, 1, backpropagatedGradientWeightTuples)
-//    println(s"old bias: ${ oldBias} - new bias: ${bias}")
-
 
   }
 

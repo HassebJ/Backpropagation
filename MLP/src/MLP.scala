@@ -1,4 +1,32 @@
-object MLP {
+import java.util.concurrent.{ExecutorService, Executors, TimeUnit}
+
+object MLP{
+  //seed of 0 (on this system)seems to generate initial weights which leads to convergence for all configs
+  val seed = 0//System.currentTimeMillis()
+  def main(args: Array[String]): Unit = {
+    val start = System.currentTimeMillis()
+    var pool: ExecutorService = Executors.newFixedThreadPool(4)
+
+    for(i <- 0.05 to 0.5 by 0.05){
+        pool.execute(new MLP(Math.round(i * 100.0) / 100.0, 0))
+    }
+    pool.shutdown()
+    pool.awaitTermination(24L, TimeUnit.HOURS)
+
+    Neuron.alpha = 0.9
+    pool = Executors.newFixedThreadPool(4)
+    for(i <- 0.05 to 0.5 by 0.05){
+      pool.execute(new MLP(Math.round(i * 100.0) / 100.0, 0.9))
+    }
+    pool.shutdown()
+    pool.awaitTermination(24L, TimeUnit.HOURS)
+    val end = System.currentTimeMillis()
+    println(s"Time taken: ${(end-start)/1000/60} minutes")
+
+  }
+}
+
+class MLP(learningRate: Double, alpha: Double) extends Runnable{
 
   val inputs = new Array[Array[Double]](16)
   var hiddenLayer = new Array[Neuron](4)
@@ -8,85 +36,66 @@ object MLP {
   val outputLayer = Array[Neuron](new Neuron(4, true))
   val desiredOutput = new Array[Double](16)
   val absoluteErrors = new Array[Double](16)
+  val netOutputs = new Array[Double](16)
 
   def init(): Unit = {
-    hiddenLayer.foreach(_.init())
-//    hiddenLayer(0).setWeights(Array[Double](0.8, 0.2, 0.4, 0.9))
-//    hiddenLayer(1).setWeights(Array[Double](0.4, 0.9, 0.8, 0.2))
-//    hiddenLayer(2).setWeights(Array[Double](0.3, 0.5, 0.7, 0.6))
-//    hiddenLayer(3).setWeights(Array[Double](0.7, 0.6, 0.3, 0.5))
-
     outputLayer.foreach(_.init())
-//    outputLayer(0).setWeights(Array[Double](0.6, 0.4, 0.2, 0.5))
+    hiddenLayer.foreach(_.init())
 
-
-    inputs(0) = Array(0,0,0,0)
-    inputs(1) = Array(0,0,0,1)
-    inputs(2) = Array(0,0,1,0)
-    inputs(3) = Array(0,0,1,1)
-    inputs(4) = Array(0,1,0,0)
-    inputs(5) = Array(0,1,0,1)
-    inputs(6) = Array(0,1,1,0)
-    inputs(7) = Array(0,1,1,1)
-    inputs(8) = Array(1,0,0,0)
-    inputs(9) = Array(1,0,0,1)
-    inputs(10) = Array(1,0,1,0)
-    inputs(11) = Array(1,0,1,1)
-    inputs(12) = Array(1,1,0,0)
-    inputs(13) = Array(1,1,0,1)
-    inputs(14) = Array(1,1,1,0)
-    inputs(15) = Array(1,1,1,1)
-
-//    inputs(0) = Array(1,1,1,1)
+    inputs(0) = Array(0,0,0,0,1)
+    inputs(1) = Array(0,0,0,1,1)
+    inputs(2) = Array(0,0,1,0,1)
+    inputs(3) = Array(0,0,1,1,1)
+    inputs(4) = Array(0,1,0,0,1)
+    inputs(5) = Array(0,1,0,1,1)
+    inputs(6) = Array(0,1,1,0,1)
+    inputs(7) = Array(0,1,1,1,1)
+    inputs(8) = Array(1,0,0,0,1)
+    inputs(9) = Array(1,0,0,1,1)
+    inputs(10) = Array(1,0,1,0,1)
+    inputs(11) = Array(1,0,1,1,1)
+    inputs(12) = Array(1,1,0,0,1)
+    inputs(13) = Array(1,1,0,1,1)
+    inputs(14) = Array(1,1,1,0,1)
+    inputs(15) = Array(1,1,1,1,1)
 
     for(i <- 0 until 16){
       if(inputs(i).sum % 2 == 0){
-        desiredOutput(i) = 0
-      }else{
         desiredOutput(i) = 1
+      }else{
+        desiredOutput(i) = 0
       }
     }
-
-//    desiredOutput(0) = 0
-
-//    inputs.zip(desiredOutput).foreach({case (input, output) => input.foreach(print)
-//      println(s": ${output}")})
   }
-
-//  def targetAccuracyAchieved(): Boolean ={
-//    for(i<-0 until absoluteErrors.length){
-//
-//    }
-//    val temp =
-//  }
-//
 
   def forwardPass(): Unit ={
 
   }
 
-  def main(args: Array[String]): Unit = {
+  override def run(): Unit = {
+//    println(s"Starting with n: ${learningRate}, a: ${alpha}" )
+    algorithm(learningRate)
+  }
+
+  def algorithm(learningRate: Double): Unit = {
     init()
-    val learningRate = 0.05
     var epoch = 0;
     do {
-
-//      println(s"###############    EPOCH: ${epoch}")
-      epoch+=1
       inputs.zipWithIndex.foreach({ case (input, i) => {
-//        input.foreach(bit => print(s"${bit.toInt}, "))
-//        print(" : ")
+
         val hiddenLayerOutputs = new Array[Double](hiddenLayer.length)
         hiddenLayer.zipWithIndex.foreach({
           case (hiddenNeuron, j) => hiddenLayerOutputs(j) = hiddenNeuron.output(input)
         })
 
-
-        val netOutput = outputLayer.map(outputNeuron => outputNeuron.output(hiddenLayerOutputs)).sum
-        absoluteErrors(i) = desiredOutput(i) - netOutput
-//        println(s"${desiredOutput(i)} : ${netOutput} : ${absoluteErrors(i)}")
-
-
+        netOutputs(i) = outputLayer.map(outputNeuron => outputNeuron.output(hiddenLayerOutputs)).sum
+        absoluteErrors(i) = desiredOutput(i) - netOutputs(i)
+//        if(epoch % 50000 ==0) {
+//          input.foreach(bit => print(s"${bit.toInt}, "))
+//          print(" : ")
+//          println(s"${desiredOutput(i)} : ${netOutputs(i)} : ${absoluteErrors(i)}")
+//          println(s"###############    EPOCH: ${epoch}     ###############")
+//        }
         outputLayer.foreach(_.updateWeights(learningRate, desiredOutput(i)))
         hiddenLayer.zipWithIndex.foreach({ case (hiddenNeuron, k) => {
           val gradientWeightTuple = new Array[(Double, Double)](outputLayer.length)
@@ -100,12 +109,22 @@ object MLP {
 
       }
       })
+      epoch+=1
+
     }while(!absoluteErrors.map(_ match {
-      case x if x >= 0.05 =>
+      case x if Math.abs(x) <= 0.05 =>
         true
       case _ =>
         false
     }).forall(identity))
+//    inputs.zipWithIndex.foreach({case(input,i) =>{
+
+
+//    input.foreach(bit => print(s"${bit.toInt}, "))
+//    print(" : ")
+//    println(s"${desiredOutput(i)} : ${netOutputs(i)} : ${absoluteErrors(i)}")
+//    }})
+    println(s"Epochs: ${epoch} -  LearningRate: ${learningRate} - MomentumConstant: ${Neuron.alpha} - Seed: ${MLP.seed}" )
   }
 
 
