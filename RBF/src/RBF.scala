@@ -16,24 +16,47 @@ object RBF {
   var desiredOutputs = new Array[Double](sampleSize)
 //  var dataPoints: Map[Double, Double] = null
 
+  def joinHosts(hosts: Seq[String], port: String): String = {
+    val joined = new StringBuilder()
+    hosts.zipWithIndex.foreach({case(host, i) =>{
+      var hostPort = (s"$host:$port")
+      if (i < hosts.size -1) {
+        hostPort = hostPort.concat(",")
+      }
+      joined.append(hostPort)
+    }})
+    joined.toString()
+  }
+
   def main(args: Array[String]): Unit = {
 
-    generateData()
-    for(rate <- learningRates){
-      bases.foreach(base => {
-        println(s"********* RUNNING with Bases: $base, LearningRate: $rate, SameVariance: false")
-        runTestWith(base, rate, false)
-      })
-    }
+//    val hosts = Seq("storage01", "storage02", "storage03")
+//    val port = "9092"
+//    println(joinHosts(hosts, port))
 
-    for(rate <- learningRates){
-      bases.foreach(base => {
-        println(s"********* RUNNING with Bases: $base, LearningRate: $rate, SameVariance: true")
-        runTestWith(base, rate, true)
-      })
-    }
+    import java.util.StringTokenizer
+    val property = System.getProperty("java.library.path")
+    val parser = new StringTokenizer(property, ";")
+    while ( {
+      parser.hasMoreTokens
+    }) println(parser.nextToken)
 
-//    leastMeanSquare(kMeans(11, false),0.01, 11 )
+//    generateData()
+//    for(rate <- learningRates){
+//      bases.foreach(base => {
+//        println(s"********* RUNNING with Bases: $base, LearningRate: $rate, SameVariance: false")
+//        runTestWith(base, rate, false)
+//      })
+//    }
+//
+//    for(rate <- learningRates){
+//      bases.foreach(base => {
+//        println(s"********* RUNNING with Bases: $base, LearningRate: $rate, SameVariance: true")
+//        runTestWith(base, rate, true)
+//      })
+//    }
+//
+////    leastMeanSquare(kMeans(11, false),0.01, 11 )
   }
 
   def runTestWith(base: Int, learningRate: Double, useSameVariance: Boolean): Unit ={
