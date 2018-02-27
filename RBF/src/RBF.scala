@@ -30,33 +30,22 @@ object RBF {
 
   def main(args: Array[String]): Unit = {
 
-//    val hosts = Seq("storage01", "storage02", "storage03")
-//    val port = "9092"
-//    println(joinHosts(hosts, port))
-
-    import java.util.StringTokenizer
-    val property = System.getProperty("java.library.path")
-    val parser = new StringTokenizer(property, ";")
-    while ( {
-      parser.hasMoreTokens
-    }) println(parser.nextToken)
-
-//    generateData()
-//    for(rate <- learningRates){
-//      bases.foreach(base => {
-//        println(s"********* RUNNING with Bases: $base, LearningRate: $rate, SameVariance: false")
-//        runTestWith(base, rate, false)
-//      })
-//    }
+    generateData()
+    for(rate <- learningRates){
+      bases.foreach(base => {
+        println(s"********* RUNNING with Bases: $base, LearningRate: $rate, SameVariance: false")
+        runTestWith(base, rate, false)
+      })
+    }
 //
-//    for(rate <- learningRates){
-//      bases.foreach(base => {
-//        println(s"********* RUNNING with Bases: $base, LearningRate: $rate, SameVariance: true")
-//        runTestWith(base, rate, true)
-//      })
-//    }
-//
-////    leastMeanSquare(kMeans(11, false),0.01, 11 )
+    for(rate <- learningRates){
+      bases.foreach(base => {
+        println(s"********* RUNNING with Bases: $base, LearningRate: $rate, SameVariance: true")
+        runTestWith(base, rate, true)
+      })
+    }
+
+//    leastMeanSquare(kMeans(11, false),0.01, 11 )
   }
 
   def runTestWith(base: Int, learningRate: Double, useSameVariance: Boolean): Unit ={
@@ -87,20 +76,26 @@ object RBF {
 
   def generateData() ={
 
-//    dataPoints =
-      (0 until sampleSize).foreach(i => {
+    (0 until sampleSize).foreach(i => {
       val x = threeDP(rand.nextDouble)
       val noise = -0.1 + (0.1 - (-0.1)) * rand.nextDouble
       val h = 0.5 + (0.4 * Math.sin(2 * Math.PI * x)) + noise
       inputs(i) = x
+
+
       desiredOutputs(i) = threeDP(h)
-//      (x , threeDP(h))
-    })
+//      println(s"Noise: ${noise}, x: ${x}, h(x): ${h}")
+      //      (x , threeDP(h))
+      })
   }
 
   def threeDP(num: Double): Double ={
     Math.round(num * 1000.0) / 1000.0
   }
+
+//  def threeDP(num: Double): Double ={
+//    num
+//  }
 
   def kMeans(base: Int, useSameVariance: Boolean): mutable.LinkedHashMap[Double,Double] ={//Array[(Double) => Double] ={
     Random.setSeed(seed)
@@ -167,6 +162,7 @@ object RBF {
     }else {
       meanVariance = clusters.map({ case (mean, cluster) => {
         val variance = getVariance(cluster.filter(data => data.isNaN == false))
+//        val variance = getVariance(cluster.filter(data => data.isNaN == false), mean)
 
         (mean, variance)
       }
@@ -200,11 +196,15 @@ object RBF {
   }
 
 //  def leastMeanSquare(gaussians: Array[(Double) => Double], learningRate : Double, base: Int ): Array[Double] ={
-    def leastMeanSquare(meanVariance: mutable.LinkedHashMap[Double,Double], learningRate : Double, base: Int ): Array[Double] ={
+  def leastMeanSquare(meanVariance: mutable.LinkedHashMap[Double,Double], learningRate : Double, base: Int ): Array[Double] ={
     var currentEpoch = 0
     var weights = new Array[Double](base + 1)
     //include bias
-    (0 to base ).foreach(i => weights(i) = threeDP(rand.nextDouble()))
+
+    for(i <- 0 until weights.length){
+      weights(i) = threeDP(rand.nextDouble())
+    }
+//    (0 to base ).foreach(i => weights(i) = threeDP(rand.nextDouble()))
 
     var yeilds = new Array[Double](inputs.length)
       meanVariance+=((1.0,1.0))
@@ -212,20 +212,23 @@ object RBF {
     while(currentEpoch < totalEpochs) {
 //      println(s"######## EPOCH $currentEpoch###########")
 //      weights.foreach(weight => println(twoDP(weight)))
-      inputs.zipWithIndex.foreach({ case (point, i) => {
+      inputs.zipWithIndex.foreach({ case (point, inputIndex) => {
+        val gaussians = new Array[Double](base + 1)
 
         val yeild = meanVariance.zip(weights).zipWithIndex.map({
-          case ((tuple, weight), i) =>
-            if(i == weights.length - 1){
+          case ((tuple, weight), weightIndex) =>
+            if(weightIndex == weights.length - 1){
+              gaussians(weightIndex) = weight
               1 * weight
             }else{
-              gaussian(point, tuple._1, tuple._2) * weight
+              gaussians(weightIndex) = gaussian(point, tuple._1, tuple._2)
+              gaussians(weightIndex) * weight
             }
             })
           .sum
-        yeilds(i) = threeDP(yeild)
-        weights = weights.map({ case (weight) => {
-          weight + (learningRate * (desiredOutputs(i) - yeild) * point)
+        yeilds(inputIndex) = threeDP(yeild)
+        weights = weights.zip(gaussians).map({ case (weight, _gaussian) => {
+          weight + (learningRate * (desiredOutputs(inputIndex) - yeild) * _gaussian)
         }
         })
       }
@@ -266,12 +269,20 @@ object RBF {
     temp / (data.size - 1)
   }
 
+  def getVariance(clusterMemebers: ListBuffer[Double], mean: Double) : Double = {
+    var squaredDistanceSum = 0.0;
+    for(member <- clusterMemebers){
+      squaredDistanceSum += Math.pow(mean - member, 2);
+    }
+    squaredDistanceSum / clusterMemebers.size
+  }
+
   def gaussian(input: Double, center: Double, variance : Double): Double ={
 //    Math.exp(   (-1/2*variance) * euclideanNormSquared(input, center))
     if(center == 0.0 || variance == 0.0){
       return 1.0
     }
-    var gaussian = Math.exp(   (- 0.5 * euclideanNormSquared(input, center))  /variance)
+    var gaussian = Math.exp(   (- 1 * euclideanNormSquared(input, center))  / (2 * variance) )
 
 //    val newGaussian =  pdf(input, center, Math.sqrt(variance))
 //    val get = getY(input, center, variance)

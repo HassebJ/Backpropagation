@@ -1,25 +1,21 @@
 import java.util.concurrent.{ExecutorService, Executors, TimeUnit}
 
 object MLP{
-  //seed of 0 (on this system)seems to generate initial weights which leads to convergence for all configs
-  val seed = 0//System.currentTimeMillis()
+  val seed = 0
   def main(args: Array[String]): Unit = {
     val start = System.currentTimeMillis()
     var pool: ExecutorService = Executors.newFixedThreadPool(4)
+//
+    for(i <- 0.05 to 0.5 by 0.05){
+        val mlp = new MLP(Math.round(i * 100.0) / 100.0, 0);
+      mlp.algorithm(i)
+    }
 
     for(i <- 0.05 to 0.5 by 0.05){
-        pool.execute(new MLP(Math.round(i * 100.0) / 100.0, 0))
+      val mlp = new MLP(Math.round(i * 100.0) / 100.0, 0.9);
+      mlp.algorithm(i)
     }
-    pool.shutdown()
-    pool.awaitTermination(24L, TimeUnit.HOURS)
 
-    Neuron.alpha = 0.9
-    pool = Executors.newFixedThreadPool(4)
-    for(i <- 0.05 to 0.5 by 0.05){
-      pool.execute(new MLP(Math.round(i * 100.0) / 100.0, 0.9))
-    }
-    pool.shutdown()
-    pool.awaitTermination(24L, TimeUnit.HOURS)
     val end = System.currentTimeMillis()
     println(s"Time taken: ${(end-start)/1000/60} minutes")
 
@@ -68,10 +64,6 @@ class MLP(learningRate: Double, alpha: Double) extends Runnable{
     }
   }
 
-  def forwardPass(): Unit ={
-
-  }
-
   override def run(): Unit = {
 //    println(s"Starting with n: ${learningRate}, a: ${alpha}" )
     algorithm(learningRate)
@@ -90,23 +82,21 @@ class MLP(learningRate: Double, alpha: Double) extends Runnable{
 
         netOutputs(i) = outputLayer.map(outputNeuron => outputNeuron.output(hiddenLayerOutputs)).sum
         absoluteErrors(i) = desiredOutput(i) - netOutputs(i)
-//        if(epoch % 50000 ==0) {
-//          input.foreach(bit => print(s"${bit.toInt}, "))
-//          print(" : ")
-//          println(s"${desiredOutput(i)} : ${netOutputs(i)} : ${absoluteErrors(i)}")
-//          println(s"###############    EPOCH: ${epoch}     ###############")
-//        }
         outputLayer.foreach(_.updateWeights(learningRate, desiredOutput(i)))
+
+        val gradientWeightTuples = Array.ofDim[(Double, Double)](hiddenLayer.length, outputLayer.length)
         hiddenLayer.zipWithIndex.foreach({ case (hiddenNeuron, k) => {
           val gradientWeightTuple = new Array[(Double, Double)](outputLayer.length)
           outputLayer.zipWithIndex.foreach({ case (outputNeuron, l) =>
             gradientWeightTuple(l) = outputNeuron.getGradientWeightTuple(k)
           })
-          hiddenNeuron.updateWeights(learningRate, gradientWeightTuple)
+          gradientWeightTuples(k) = gradientWeightTuple
         }
         })
 
-
+        hiddenLayer.zip(gradientWeightTuples).foreach({ case (hiddenNeuron, gradientWeightTuple) => {
+          hiddenNeuron.updateWeights(learningRate, gradientWeightTuple)
+        }})
       }
       })
       epoch+=1
@@ -117,13 +107,6 @@ class MLP(learningRate: Double, alpha: Double) extends Runnable{
       case _ =>
         false
     }).forall(identity))
-//    inputs.zipWithIndex.foreach({case(input,i) =>{
-
-
-//    input.foreach(bit => print(s"${bit.toInt}, "))
-//    print(" : ")
-//    println(s"${desiredOutput(i)} : ${netOutputs(i)} : ${absoluteErrors(i)}")
-//    }})
     println(s"Epochs: ${epoch} -  LearningRate: ${learningRate} - MomentumConstant: ${Neuron.alpha} - Seed: ${MLP.seed}" )
   }
 
