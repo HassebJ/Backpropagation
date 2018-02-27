@@ -1,6 +1,5 @@
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.Variance
 import scala.util.Random
 
 object RBF {
@@ -84,7 +83,7 @@ object RBF {
 
 
       desiredOutputs(i) = threeDP(h)
-//      println(s"Noise: ${noise}, x: ${x}, h(x): ${h}")
+      println(s"Noise: ${noise}")//, x: ${x}, h(x): ${h}")
       //      (x , threeDP(h))
       })
   }
@@ -93,9 +92,6 @@ object RBF {
     Math.round(num * 1000.0) / 1000.0
   }
 
-//  def threeDP(num: Double): Double ={
-//    num
-//  }
 
   def kMeans(base: Int, useSameVariance: Boolean): mutable.LinkedHashMap[Double,Double] ={//Array[(Double) => Double] ={
     Random.setSeed(seed)
@@ -141,9 +137,6 @@ object RBF {
 
     }while(meanChanged)
 
-
-//    clusters.foreach(println)
-//    print("All Clusters with > 1 elements: ")
     val i = 0
     var sizeOneClusters = mutable.ListBuffer[Int]()
     clusters.zipWithIndex.foreach({
@@ -161,13 +154,10 @@ object RBF {
       meanVariance = clusters.map(tuple => (tuple._1, defaultVariance))
     }else {
       meanVariance = clusters.map({ case (mean, cluster) => {
-        val variance = getVariance(cluster.filter(data => data.isNaN == false))
-//        val variance = getVariance(cluster.filter(data => data.isNaN == false), mean)
-
+        val variance = getVariance(cluster.filter(data => data.isNaN == false), mean)
         (mean, variance)
       }
       })
-//      meanVariance.foreach(println)
       val averageVariance = meanVariance.map(_._2).filter(!_.isNaN).sum / meanVariance.size
       meanVariance = meanVariance.map({case(mean, variance) => {
         if (variance.isNaN){
@@ -177,7 +167,6 @@ object RBF {
         }
 
       }})
-//      meanVariance.foreach(println)
     }
 
 //    val gaussians =  new Array[(Double) => Double](base + 1)
@@ -195,7 +184,6 @@ object RBF {
     meanVariance
   }
 
-//  def leastMeanSquare(gaussians: Array[(Double) => Double], learningRate : Double, base: Int ): Array[Double] ={
   def leastMeanSquare(meanVariance: mutable.LinkedHashMap[Double,Double], learningRate : Double, base: Int ): Array[Double] ={
     var currentEpoch = 0
     var weights = new Array[Double](base + 1)
@@ -204,7 +192,6 @@ object RBF {
     for(i <- 0 until weights.length){
       weights(i) = threeDP(rand.nextDouble())
     }
-//    (0 to base ).foreach(i => weights(i) = threeDP(rand.nextDouble()))
 
     var yeilds = new Array[Double](inputs.length)
       meanVariance+=((1.0,1.0))
@@ -235,8 +222,6 @@ object RBF {
       })
       currentEpoch+=1
     }
-//    println("Input, Desired, Yeild")
-//    desiredOutputs.zip(yeilds).zip(inputs).foreach({case ((desired, yeild), input) => println(s"$input, $desired, $yeild")})
     print("Inputs,   ")
     inputs.foreach(inputs => print(s"$inputs, "))
     println
@@ -260,15 +245,6 @@ object RBF {
     sum / data.size
   }
 
-  def getVariance(data: ListBuffer[Double]): Double = {
-    val mean = getMean(data)
-    var temp = 0.0
-    for (a <- data) {
-      temp += (a - mean) * (a - mean)
-    }
-    temp / (data.size - 1)
-  }
-
   def getVariance(clusterMemebers: ListBuffer[Double], mean: Double) : Double = {
     var squaredDistanceSum = 0.0;
     for(member <- clusterMemebers){
@@ -283,12 +259,7 @@ object RBF {
       return 1.0
     }
     var gaussian = Math.exp(   (- 1 * euclideanNormSquared(input, center))  / (2 * variance) )
-
-//    val newGaussian =  pdf(input, center, Math.sqrt(variance))
-//    val get = getY(input, center, variance)
     gaussian
-//    get
-//    newGaussian
   }
 
   def getY(x: Double, mean: Double, variance: Double) : Double = {
@@ -309,15 +280,12 @@ object RBF {
     iter1.foreach(outer => {
       iter2.foreach(inner => {
         val norm = euclideanNorm(inner, outer)
-//        println(s"$norm - $inner - $outer")
         if(norm > maxClusterDistance){
           maxClusterDistance = norm
         }
       })
     })
-//    println(s"Max Cluster distance: $maxClusterDistance")
     maxClusterDistance
   }
-
 
 }
