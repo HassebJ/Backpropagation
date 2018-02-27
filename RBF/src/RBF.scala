@@ -218,7 +218,7 @@ object RBF {
         val yeild = meanVariance.zip(weights).zipWithIndex.map({
           case ((tuple, weight), weightIndex) =>
             if(weightIndex == weights.length - 1){
-              gaussians(weightIndex) = weight
+              gaussians(weightIndex) = 1
               1 * weight
             }else{
               gaussians(weightIndex) = gaussian(point, tuple._1, tuple._2)
